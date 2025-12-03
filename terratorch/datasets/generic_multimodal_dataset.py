@@ -186,6 +186,8 @@ class GenericMultimodalDataset(NonGeoDataset, ABC):
             image_files = {}
             for m, m_paths in data_root.items():
                 image_files[m] = sorted(glob.glob(os.path.join(m_paths, image_grep[m])))
+                if len(image_files[m]) > 10_000:
+                    warnings.warn("Found large data folder, consider providing split files to speed up dataset build.")
 
             def get_file_id(file_name, mod):
                 glob_as_regex = '^' + ''.join('(.*?)' if ch == '*' else re.escape(ch)
@@ -243,7 +245,16 @@ class GenericMultimodalDataset(NonGeoDataset, ABC):
                     sample[m] = m_path.loc[file].values
                 elif allow_substring_file_names:
                     # Substring match with image_grep
-                    m_files = sorted(glob.glob(os.path.join(m_path, file + image_grep[m])))
+                    if os.path.exists(os.path.join(m_path, file + image_grep[m].strip('*'))):
+                        # Avoid glob if possible to speed up the dataset build
+                        m_files = [os.path.join(m_path, file + image_grep[m].strip('*'))]
+                    else:
+                        m_files = sorted(glob.glob(os.path.join(m_path, file + image_grep[m])))
+                        if (len(valid_files) > 10_000):
+                            warnings.warn("Found large data folder. You can speed up the dataset build by "
+                                          "providing split files with sample ids and suffixes without wildcards. E.g. "
+                                          "sample id 'sample1' and suffix '_s2l2a.tif' for file 'sample1_s2l2a.tif'.")
+
                     if m_files:
                         sample[m] = m_files[-1]
                         if len(m_files) > 1:
@@ -261,8 +272,12 @@ class GenericMultimodalDataset(NonGeoDataset, ABC):
                     # Add tabular data to sample
                     sample["mask"] = label_data_root.loc[file].values
                 elif allow_substring_file_names:
-                    # Substring match with label_grep
-                    l_files = sorted(glob.glob(os.path.join(label_data_root, file + label_grep)))
+                    if os.path.exists(os.path.join(label_data_root, file + label_grep.strip('*'))):
+                        # Avoid glob if possible to speed up the dataset build
+                        l_files = [os.path.join(label_data_root, file + label_grep.strip('*'))]
+                    else:
+                        # Substring match with label_grep
+                        l_files = sorted(glob.glob(os.path.join(label_data_root, file + label_grep)))
                     if l_files:
                         sample["mask"] = l_files[-1]
                 else:
