@@ -96,10 +96,8 @@ class GenericMultimodalDataset(NonGeoDataset, ABC):
             rgb_indices (dict[str, list[int]], optional): Indices of RGB channels for plotting with the format
                 {<modality>: [<band indices>]}. Defaults to {image_modalities[0]: [0, 1, 2]} if not provided.
             allow_missing_modalities (bool, optional): Allow missing modalities during data loading. Defaults to False.
-            allow_substring_file_names (bool, optional): Allow substrings during sample identification by adding
-                image or label grep to the sample prefixes. If False, treats sample prefixes as full file names.
-                If True and no split file is provided, considers the file stem as prefix, otherwise the full file name.
-                Defaults to True.
+            allow_substring_file_names (bool, optional): Allow substrings during sample identification using
+                wildcards (*). If False, treats sample prefix + image_grep as full file name. Defaults to True.
             dataset_bands (dict[list], optional): Bands present in the dataset, provided in a dictionary with modalities
                 as keys. This parameter names input channels (bands) using HLSBands, ints, int ranges, or strings, so
                 that they can then be referred to by output_bands. Needs to be superset of output_bands. Can be a subset
@@ -625,10 +623,8 @@ class GenericMultimodalSegmentationDataset(GenericMultimodalDataset):
             rgb_indices (dict[str, list[int]], optional): Indices of RGB channels for plotting with the format
                 {<modality>: [<band indices>]}. Defaults to {image_modalities[0]: [0, 1, 2]} if not provided.
             allow_missing_modalities (bool, optional): Allow missing modalities during data loading. Defaults to False.
-            allow_substring_file_names (bool, optional): Allow substrings during sample identification by adding
-                image or label grep to the sample prefixes. If False, treats sample prefixes as full file names.
-                If True and no split file is provided, considers the file stem as prefix, otherwise the full file name.
-                Defaults to True.
+            allow_substring_file_names (bool, optional): Allow substrings during sample identification using
+                wildcards (*). If False, treats sample prefix + image_grep as full file name. Defaults to True.
             dataset_bands (dict[list], optional): Bands present in the dataset, provided in a dictionary with modalities
                 as keys. This parameter names input channels (bands) using HLSBands, ints, int ranges, or strings, so
                 that they can then be referred to by output_bands. Needs to be superset of output_bands. Can be a subset
@@ -743,10 +739,8 @@ class GenericMultimodalPixelwiseRegressionDataset(GenericMultimodalDataset):
             rgb_indices (dict[str, list[int]], optional): Indices of RGB channels for plotting with the format
                 {<modality>: [<band indices>]}. Defaults to {image_modalities[0]: [0, 1, 2]} if not provided.
             allow_missing_modalities (bool, optional): Allow missing modalities during data loading. Defaults to False.
-            allow_substring_file_names (bool, optional): Allow substrings during sample identification by adding
-                image or label grep to the sample prefixes. If False, treats sample prefixes as full file names.
-                If True and no split file is provided, considers the file stem as prefix, otherwise the full file name.
-                Defaults to True.
+            allow_substring_file_names (bool, optional): Allow substrings during sample identification using
+                wildcards (*). If False, treats sample prefix + image_grep as full file name. Defaults to True.
             dataset_bands (dict[list], optional): Bands present in the dataset, provided in a dictionary with modalities
                 as keys. This parameter names input channels (bands) using HLSBands, ints, int ranges, or strings, so
                 that they can then be referred to by output_bands. Needs to be superset of output_bands. Can be a subset
@@ -860,10 +854,8 @@ class GenericMultimodalScalarDataset(GenericMultimodalDataset):
             rgb_indices (dict[str, list[int]], optional): Indices of RGB channels for plotting with the format
                 {<modality>: [<band indices>]}. Defaults to {image_modalities[0]: [0, 1, 2]} if not provided.
             allow_missing_modalities (bool, optional): Allow missing modalities during data loading. Defaults to False.
-            allow_substring_file_names (bool, optional): Allow substrings during sample identification by adding
-                image or label grep to the sample prefixes. If False, treats sample prefixes as full file names.
-                If True and no split file is provided, considers the file stem as prefix, otherwise the full file name.
-                Defaults to True.
+            allow_substring_file_names (bool, optional): Allow substrings during sample identification using
+                wildcards (*). If False, treats sample prefix + image_grep as full file name. Defaults to True.
             dataset_bands (dict[list], optional): Bands present in the dataset, provided in a dictionary with modalities
                 as keys. This parameter names input channels (bands) using HLSBands, ints, int ranges, or strings, so
                 that they can then be referred to by output_bands. Needs to be superset of output_bands. Can be a subset
