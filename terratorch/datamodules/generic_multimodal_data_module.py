@@ -206,6 +206,7 @@ class GenericMultiModalDataModule(NonGeoDataModule):
         rgb_modality: str | None = None,
         rgb_indices: list[int] | dict[str, list[int]] | None = None,
         allow_substring_file_names: bool = True,
+        skip_file_checks: bool = False,
         class_names: list[str] | None = None,
         constant_scale: dict[str, float] = None,
         train_transform: dict | A.Compose | None | list[A.BasicTransform] = None,
@@ -292,6 +293,9 @@ class GenericMultiModalDataModule(NonGeoDataModule):
                 {<modality>: [<band indices>]}. Defaults to {image_modalities[0]: [0, 1, 2]} if not provided.
             allow_substring_file_names (bool, optional): Allow substrings during sample identification using
                 wildcards (*). If False, treats sample prefix + image_grep as full file name. Defaults to True.
+            skip_file_checks (bool, optional): Skips the check if a sample path exists. Only works
+                with allow_missing_modalities=False and allow_substring_file_names=False. Samples are expected in the
+                format <prefix><image_grep> without any wildcards (*), e.g. sample1_s2l2a.tif. Defaults to False.
             class_names (list[str], optional): Names of the classes. Defaults to None.
             constant_scale (dict[str, float]): Factor to multiply data values by, provided as a dictionary with modalities as
                 keys. Can be subset of all modalities. Defaults to None.
@@ -447,6 +451,11 @@ class GenericMultiModalDataModule(NonGeoDataModule):
         self.drop_last = drop_last
         self.pin_memory = pin_memory
         self.allow_missing_modalities = allow_missing_modalities
+        if skip_file_checks and (allow_missing_modalities or allow_substring_file_names):
+            raise ValueError("skip_file_checks cannot be used with allow_missing_modalities or "
+                             "allow_substring_file_names. Samples are expected in the format <prefix><image_grep> "
+                             "without any wildcards (*), e.g. sample1_s2l2a.tif with image grep={'S2': '_s2l2a.tif'}.")
+        self.skip_file_checks = skip_file_checks
         self.sample_num_modalities = sample_num_modalities
         self.sample_replace = sample_replace
         if allow_missing_modalities and batch_size > 1:
@@ -548,6 +557,7 @@ class GenericMultiModalDataModule(NonGeoDataModule):
                 split=self.train_split,
                 allow_missing_modalities=self.allow_missing_modalities,
                 allow_substring_file_names=self.allow_substring_file_names,
+                skip_file_checks=self.skip_file_checks,
                 dataset_bands=self.dataset_bands,
                 output_bands=self.output_bands,
                 constant_scale=self.constant_scale,
@@ -573,6 +583,7 @@ class GenericMultiModalDataModule(NonGeoDataModule):
                 split=self.val_split,
                 allow_missing_modalities=self.allow_missing_modalities,
                 allow_substring_file_names=self.allow_substring_file_names,
+                skip_file_checks=self.skip_file_checks,
                 dataset_bands=self.dataset_bands,
                 output_bands=self.output_bands,
                 constant_scale=self.constant_scale,
@@ -598,6 +609,7 @@ class GenericMultiModalDataModule(NonGeoDataModule):
                 split=self.test_split,
                 allow_missing_modalities=self.allow_missing_modalities,
                 allow_substring_file_names=self.allow_substring_file_names,
+                skip_file_checks=self.skip_file_checks,
                 dataset_bands=self.dataset_bands,
                 output_bands=self.output_bands,
                 constant_scale=self.constant_scale,
@@ -622,6 +634,7 @@ class GenericMultiModalDataModule(NonGeoDataModule):
                 label_grep=self.label_grep,
                 allow_missing_modalities=self.allow_missing_modalities,
                 allow_substring_file_names=self.allow_substring_file_names,
+                skip_file_checks=self.skip_file_checks,
                 dataset_bands=self.predict_dataset_bands,
                 output_bands=self.predict_output_bands,
                 constant_scale=self.constant_scale,

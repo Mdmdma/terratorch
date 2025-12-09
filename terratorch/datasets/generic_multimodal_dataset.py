@@ -59,6 +59,7 @@ class GenericMultimodalDataset(NonGeoDataset, ABC):
         rgb_indices: dict[str, list[int]] | None = None,
         allow_missing_modalities: bool = False,
         allow_substring_file_names: bool = True,
+        skip_file_checks: bool = False,
         dataset_bands: dict[str, list] | None = None,
         output_bands: dict[str, list] | None = None,
         constant_scale: dict[str, float] = None,
@@ -117,6 +118,9 @@ class GenericMultimodalDataset(NonGeoDataset, ABC):
                 If None, does no replacement. Defaults to None.
             no_label_replace (float | None): Replace nan values in label with this value.
                 If none, does no replacement. Defaults to -1.
+            skip_file_checks (bool, optional): Skips the check if a sample path exists. Only works
+                with allow_missing_modalities=False and allow_substring_file_names=False. Samples are expected in the
+                format <prefix><image_grep> without any wildcards (*), e.g. sample1_s2l2a.tif. Defaults to False.
             expand_temporal_dimension (bool): Go from shape (time*channels, h, w) to (channels, time, h, w).
                 Only works with image modalities. Is only applied to modalities with defined dataset_bands.
                 Defaults to False.
@@ -181,13 +185,12 @@ class GenericMultimodalDataset(NonGeoDataset, ABC):
         else:
             image_files = {}
             for m, m_paths in data_root.items():
-                image_files[m] = sorted(glob.glob(os.path.join(m_paths, image_grep[m])))
+                image_files[m] = sorted(glob.glob(os.path.join(m_paths, '*' + image_grep[m])))
                 if len(image_files[m]) > 10_000:
                     warnings.warn("Found large data folder, consider providing split files to speed up dataset build.")
 
             def get_file_id(file_name, mod):
-                glob_as_regex = '^' + ''.join('(.*?)' if ch == '*' else re.escape(ch)
-                                              for ch in image_grep[mod]) + '$'
+                glob_as_regex = '^(.*?)' + ''.join(re.escape(ch)for ch in image_grep[mod].strip('*')) + '$'
                 stem = re.match(glob_as_regex, os.path.basename(file_name)).group(1)
                 if "." not in image_grep[mod] and allow_substring_file_names:
                     # Remove file extensions if no extension in image_grep
@@ -260,7 +263,7 @@ class GenericMultimodalDataset(NonGeoDataset, ABC):
                 else:
                     # Exact match
                     file_path = os.path.join(m_path, file + image_grep[m].strip('*'))
-                    if os.path.exists(file_path):
+                    if skip_file_checks or os.path.exists(file_path):
                         sample[m] = file_path
 
             if label_data_root is not None:
@@ -279,7 +282,7 @@ class GenericMultimodalDataset(NonGeoDataset, ABC):
                 else:
                     # Exact match
                     file_path = os.path.join(label_data_root, file + label_grep.strip('*'))
-                    if os.path.exists(file_path):
+                    if skip_file_checks or os.path.exists(file_path):
                         sample["mask"] = file_path
                 if "mask" not in sample:
                     # Only add sample if mask is present
@@ -587,10 +590,11 @@ class GenericMultimodalSegmentationDataset(GenericMultimodalDataset):
         rgb_indices: list[str] | None = None,
         allow_missing_modalities: bool = False,
         allow_substring_file_names: bool = False,
-        dataset_bands: dict[list] | None = None,
-        output_bands: dict[list] | None = None,
+        skip_file_checks: bool = False,
+        dataset_bands: dict[str, list] | None = None,
+        output_bands: dict[str, list] | None = None,
         class_names: list[str] | None = None,
-        constant_scale: dict[float] = 1.0,
+        constant_scale: dict[str, float] = 1.0,
         transform: A.Compose | None = None,
         no_data_replace: float | None = None,
         no_label_replace: int | None = -1,
@@ -625,6 +629,9 @@ class GenericMultimodalSegmentationDataset(GenericMultimodalDataset):
             allow_missing_modalities (bool, optional): Allow missing modalities during data loading. Defaults to False.
             allow_substring_file_names (bool, optional): Allow substrings during sample identification using
                 wildcards (*). If False, treats sample prefix + image_grep as full file name. Defaults to True.
+            skip_file_checks (bool, optional): Skips the check if a sample path exists. Only works
+                with allow_missing_modalities=False and allow_substring_file_names=False. Samples are expected in the
+                format <prefix><image_grep> without any wildcards (*), e.g. sample1_s2l2a.tif. Defaults to False.
             dataset_bands (dict[list], optional): Bands present in the dataset, provided in a dictionary with modalities
                 as keys. This parameter names input channels (bands) using HLSBands, ints, int ranges, or strings, so
                 that they can then be referred to by output_bands. Needs to be superset of output_bands. Can be a subset
@@ -666,6 +673,7 @@ class GenericMultimodalSegmentationDataset(GenericMultimodalDataset):
             rgb_indices=rgb_indices,
             allow_missing_modalities=allow_missing_modalities,
             allow_substring_file_names=allow_substring_file_names,
+            skip_file_checks=skip_file_checks,
             dataset_bands=dataset_bands,
             output_bands=output_bands,
             constant_scale=constant_scale,
@@ -705,8 +713,9 @@ class GenericMultimodalPixelwiseRegressionDataset(GenericMultimodalDataset):
         rgb_indices: list[int] | None = None,
         allow_missing_modalities: bool = False,
         allow_substring_file_names: bool = False,
-        dataset_bands: dict[list] | None = None,
-        output_bands: dict[list] | None = None,
+        skip_file_checks: bool = False,
+        dataset_bands: dict[str, list] | None = None,
+        output_bands: dict[str, list] | None = None,
         constant_scale: dict[str, float] = 1.0,
         transform: A.Compose | dict | None = None,
         no_data_replace: float | None = None,
@@ -741,6 +750,9 @@ class GenericMultimodalPixelwiseRegressionDataset(GenericMultimodalDataset):
             allow_missing_modalities (bool, optional): Allow missing modalities during data loading. Defaults to False.
             allow_substring_file_names (bool, optional): Allow substrings during sample identification using
                 wildcards (*). If False, treats sample prefix + image_grep as full file name. Defaults to True.
+            skip_file_checks (bool, optional): Skips the check if a sample path exists. Only works
+                with allow_missing_modalities=False and allow_substring_file_names=False. Samples are expected in the
+                format <prefix><image_grep> without any wildcards (*), e.g. sample1_s2l2a.tif. Defaults to False.
             dataset_bands (dict[list], optional): Bands present in the dataset, provided in a dictionary with modalities
                 as keys. This parameter names input channels (bands) using HLSBands, ints, int ranges, or strings, so
                 that they can then be referred to by output_bands. Needs to be superset of output_bands. Can be a subset
@@ -779,6 +791,7 @@ class GenericMultimodalPixelwiseRegressionDataset(GenericMultimodalDataset):
             rgb_indices=rgb_indices,
             allow_missing_modalities=allow_missing_modalities,
             allow_substring_file_names=allow_substring_file_names,
+            skip_file_checks=skip_file_checks,
             dataset_bands=dataset_bands,
             output_bands=output_bands,
             constant_scale=constant_scale,
@@ -817,10 +830,11 @@ class GenericMultimodalScalarDataset(GenericMultimodalDataset):
         rgb_indices: list[int] | None = None,
         allow_missing_modalities: bool = False,
         allow_substring_file_names: bool = False,
-        dataset_bands: list[HLSBands | int | tuple[int, int] | str] | None = None,
-        output_bands: list[HLSBands | int | tuple[int, int] | str] | None = None,
+        skip_file_checks: bool = False,
+        dataset_bands: dict[str, list] | None = None,
+        output_bands: dict[str, list] | None = None,
         class_names: list[str] | None = None,
-        constant_scale: dict[float] = 1.0,
+        constant_scale: dict[str, float] = 1.0,
         transform: A.Compose | None = None,
         no_data_replace: float | None = None,
         no_label_replace: int | None = None,
@@ -856,6 +870,9 @@ class GenericMultimodalScalarDataset(GenericMultimodalDataset):
             allow_missing_modalities (bool, optional): Allow missing modalities during data loading. Defaults to False.
             allow_substring_file_names (bool, optional): Allow substrings during sample identification using
                 wildcards (*). If False, treats sample prefix + image_grep as full file name. Defaults to True.
+            skip_file_checks (bool, optional): Skips the check if a sample path exists. Only works
+                with allow_missing_modalities=False and allow_substring_file_names=False. Samples are expected in the
+                format <prefix><image_grep> without any wildcards (*), e.g. sample1_s2l2a.tif. Defaults to False.
             dataset_bands (dict[list], optional): Bands present in the dataset, provided in a dictionary with modalities
                 as keys. This parameter names input channels (bands) using HLSBands, ints, int ranges, or strings, so
                 that they can then be referred to by output_bands. Needs to be superset of output_bands. Can be a subset
@@ -897,6 +914,7 @@ class GenericMultimodalScalarDataset(GenericMultimodalDataset):
             rgb_indices=rgb_indices,
             allow_missing_modalities=allow_missing_modalities,
             allow_substring_file_names=allow_substring_file_names,
+            skip_file_checks=skip_file_checks,
             dataset_bands=dataset_bands,
             output_bands=output_bands,
             constant_scale=constant_scale,
